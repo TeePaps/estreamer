@@ -199,11 +199,10 @@ class Classification(Struct):
 class UserMeta(Struct):
 
     _fields_ = [
-        ('block_type', 'uint32', 0),
-        ('block_length', 'uint32', 0),
         ('user_id', 'uint32', 0),
         ('protocol', 'uint32', 0),
-        ('username', StringDataBlock, 0),
+        ('length', 'uint32', 0),
+        ('username', 'variable', 0),
     ]
 
 class SourceTypeMeta(Struct):
@@ -674,7 +673,8 @@ class SSLCertificateStatus(Struct):
 
     _fields_ = [
         ('cert_status_id', 'uint32', 0),
-        ('cert_status', StringDataBlock, 0),
+        ('length', 'uint32', 0),
+        ('description', 'variable', 0),
     ]
 
 class SSLActualAction(Struct):

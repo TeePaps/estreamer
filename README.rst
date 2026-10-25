@@ -15,7 +15,7 @@ See the `examples/ <https://github.com/spohara79/estreamer/examples>`_ directory
 
 You need the following:
 
-- Configure SourceFire for the client authentication using this `guide <http://www.cisco.com/c/en/us/td/docs/security/firesight/540/api/estreamer/EventStreamerIntegrationGuide/ConfiguringEstreamer.html#38601>`_
+- Configure SourceFire for the client authentication using this `guide <http://www.cisco.com/c/en/us/td/docs/security/firesight/540/api/estreamer/EventStreamerIntegrationGuide/ConfiguringEstreamer[...]
     - You will need the cert and private key for the client
 - Get the SourceFire server certificate (for TLS verification)
 
@@ -70,8 +70,8 @@ Extended Requests
 
 The following are valid extended requests:
 
-- INTRUSION_EVENTS  
-- METADATA  
+- INTRUSION_EVENTS
+- METADATA
 - CORRELATION
 - DISCOVERY
 - CONNECTION
@@ -123,9 +123,54 @@ Example Config file:
     correlation_v6=0
     extended_request=1
 
+Database and structured logging
+------------------------------
+
+eStreamer is as much a logging and normalization problem as it is a transport protocol. In many deployments, the collector is used to send data into SQL, JSON, or another downstream system rather than a SIEM. This is especially useful in legacy SourceFire deployments and newer FMC/FTD installations where the same event stream may need to be persisted for compliance, analysis, or custom correlation.
+
+The repo already demonstrates the right extension pattern: the plugin system allows a sink to write packet captures or database rows without changing the protocol logic. The recommended approach is to keep the protocol client generic and treat the database sink as a plugin-based output layer.
+
+A simple cross-platform configuration looks like this:
+
+::
+
+    [device]
+    host=10.10.10.10
+    port=8302
+    client_cert=/etc/estreamer/client.crt
+    client_key=/etc/estreamer/client.key
+    tls_ca=/etc/estreamer/ca.pem
+
+    [settings]
+    event_types=INTRUSION_EVENTS, MALWARE, USER, FILE, IMPACT
+
+    [flags]
+    packets=0
+    metadata=0
+    ids=0
+    discovery=0
+    correlation=0
+    impact=0
+    user=0
+    timestamp=1
+    extended_request=1
+
+    [sink]
+    backend=sqlite
+    table=estreamer_events
+    path=estreamer.db
+
+This makes it simple to switch between:
+
+- SQLite for local proof-of-concept or workstation use
+- PostgreSQL / MySQL / MSSQL for central logging
+- JSON or custom sinks for SIEM or queue-based ingestion
+
+The same pattern also supports multiple firewalls and versions. A common rule is to start from the safest compatible stream flag set and then enable additional event types per device family or firmware release. This allows older SourceFire appliances, FMC-managed devices, and newer FTD releases to be supported without changing the parser logic.
+
 Example code to read a config file
 
-::  
+::
 
     cfg = ConfigParser.ConfigParser()
     cfg.read('estreamer.config')
@@ -134,7 +179,7 @@ Example code to read a config file
 
 Plugins
 -------
-The plugin system uses an autoload and auto-unload mechanism in order to add or remove plugins without needing to restart.  Simply drop a plugin into the plugins/ directory and it will pick it up and register (and use it).  Conversely, remove the plugin from the directory and it will unregister the plugin (and not use it)
+The plugin system uses an autoload and auto-unload mechanism in order to add or remove plugins without needing to restart.  Simply drop a plugin into the plugins/ directory and it will pick it up[...]
 
 To create plugins, you will need to inherit the **Plugin** class.  In addition, you will need to create a class variable (dictionary) named **__info__** that contains:
 
@@ -145,10 +190,10 @@ To create plugins, you will need to inherit the **Plugin** class.  In addition, 
 
 The callback function will receive each *record* (alert that is processed)
 
-Example: 
+Example:
 ::
     from estreamer import plugin
-    
+
     class YourPlugin(plugin.Plugin):
         __info__ = {
             'description': 'my plugin',
